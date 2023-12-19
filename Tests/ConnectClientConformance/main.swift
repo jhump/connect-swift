@@ -44,6 +44,9 @@ private func main() async throws {
 
         // TODO: Run tests concurrently
         let request = try Connectrpc_Conformance_V1_ClientCompatRequest(serializedData: nextRequestData)
+
+        FileHandle.standardError.write("SWIFT-- read request #\(number)\n".data(using: .utf8)!)
+
         let invoker = try ConformanceInvoker(request: request, clientType: clientTypeArg)
         let response: Connectrpc_Conformance_V1_ClientCompatResponse
         do {
@@ -56,7 +59,9 @@ private func main() async throws {
                 conformanceResponse.testName = request.testName
                 conformanceResponse.response = result
             }
+            FileHandle.standardError.write("SWIFT-- invocation succeeded for request #\(number)\n".data(using: .utf8)!)
         } catch let error {
+            FileHandle.standardError.write("SWIFT-- invocation failed for request #\(number)\n".data(using: .utf8)!)
             // Unexpected local/runtime error (no RPC response).
             response = .with { conformanceResponse in
                 conformanceResponse.testName = request.testName
@@ -70,6 +75,7 @@ private func main() async throws {
         var responseLength = UInt32(serializedResponse.count).bigEndian
         let output = Data(bytes: &responseLength, count: prefixLength) + serializedResponse
         FileHandle.standardOutput.write(output)
+        FileHandle.standardError.write("SWIFT-- wrote response #\(number)\n".data(using: .utf8)!)
 //        FileHandle.standardOutput.write("\n".data(using: .utf8)!)
     }
 //    throw "DONE WITH LOOP"
@@ -94,8 +100,10 @@ private let clientTypeArg = try ClientTypeArg.fromCommandLineArguments(CommandLi
 
 if #available(macOS 10.15.4, *) {
     try await main()
-    FileHandle.standardOutput.write("\n".data(using: .utf8)!)
-    _ = try FileHandle.standardInput.readToEnd()
+//     FileHandle.standardOutput.write("\n".data(using: .utf8)!)
+//     _ = try FileHandle.standardInput.readToEnd()
+    FileHandle.standardError.write("SWIFT-- Finished loop, flushing stdout...\n".data(using: .utf8)!)
+
     fflush(stdout)
 //    try FileHandle.standardOutput.close()
 //    throw "Finished main"
